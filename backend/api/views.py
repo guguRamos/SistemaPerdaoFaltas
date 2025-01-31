@@ -32,7 +32,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 class UserCreateView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [permissions.AllowAny]  # Todos podem criar uma conta
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]  # Apenas o adm pode criar uma conta
 
 #Lista Usuários
 class UserListView(generics.ListAPIView):
