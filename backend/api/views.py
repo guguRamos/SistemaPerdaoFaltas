@@ -50,7 +50,7 @@ class AbsenceListView(generics.ListAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        if user.role == "professor":
+        if user.role in ["professor", "admin"]:
             return Absence.objects.all()  # Professores veem todas as faltas
         elif user.role == "student":
             return Absence.objects.filter(student=user)  # Alunos veem suas faltas
@@ -59,7 +59,7 @@ class AbsenceListView(generics.ListAPIView):
 #Criar as faltas
 class AbsenceCreateView(generics.CreateAPIView):
     serializer_class = AbsencesSerializer
-    permission_classes = [permissions.IsAuthenticated, IsProfessor]
+    permission_classes = [permissions.IsAuthenticated, IsProfessor | IsAdmin]
 
     def perform_create(self, serializer):
         serializer.save()
@@ -95,7 +95,8 @@ class ForgivenessRequestListView(generics.ListAPIView):
 class ForgivenessRequestUpdateView(generics.UpdateAPIView):
     queryset = ForgivenessRequest.objects.all()
     serializer_class = ForgivenessRequestsSerializer
-    permission_classes = [permissions.IsAuthenticated, IsProfessor]
+    permission_classes = [permissions.IsAuthenticated, IsProfessor | IsAdmin]  # Admins também podem aprovar/rejeitar
+
 
     def perform_update(self, serializer):
         serializer.save(status=self.request.data.get("status"))
