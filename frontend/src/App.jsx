@@ -2,7 +2,6 @@ import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import Home from "./pages/Home";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -15,7 +14,7 @@ import RequestsProfessor from "./pages/RequestsProfessor";
 // Função de Logout
 function Logout() {
   localStorage.clear();
-  return <Navigate to="/login" />;
+  return <Navigate to="/api/auth/login" />;
 }
 
 // Componente principal
@@ -23,15 +22,6 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Rota protegida para Home */}
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <Home />
-            </ProtectedRoute>
-          }
-        />
 
         {/* Rotas para Alunos */}
         <Route
@@ -70,7 +60,7 @@ function App() {
         />
 
         {/* Rotas públicas */}
-        <Route path="/login" element={<Login />} />
+        <Route path="/api/auth/login" element={<Login />} />
         <Route path="/logout" element={<Logout />} />
         <Route path="/register" element={<Register />} />
         <Route path="*" element={<NotFound />} />

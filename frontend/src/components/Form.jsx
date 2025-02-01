@@ -26,6 +26,8 @@ function Form({ route, method }) {
             ? { username, password }
             : { username, password, email, role }; 
 
+        const route = isLogin ? "/api/auth/login/" : "/api/auth/register/";
+
         try {
             const res = await api.post(route, payload);
             if (isLogin) {
@@ -34,7 +36,7 @@ function Form({ route, method }) {
                 navigate("/");
             } else {
                 alert("Usuário registrado com sucesso!");
-                navigate("/login");
+                navigate("/api/auth/login");
             }
         } catch (error) {
             setError(error.response?.data?.detail || "Erro ao processar a solicitação");
