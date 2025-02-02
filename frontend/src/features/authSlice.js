@@ -13,11 +13,11 @@ const authSlice = createSlice({
     login: (state, action) => {
       const { user, token, role } = action.payload;
 
-      state.user = user;
+      state.user = { username: user };
       state.token = token;
       state.role = role;
 
-      localStorage.setItem('user', JSON.stringify(user)); 
+      localStorage.setItem('user', JSON.stringify({ username: user }));
       localStorage.setItem('ACCESS_TOKEN', token);
       localStorage.setItem('user_role', role);
     },

@@ -1,9 +1,9 @@
 import { useState } from "react";
-import api from "../api";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { login } from "../features/authSlice";
 import LoadingIndicator from "./LoadingIndicator";
+import api from "../api";
 
 function Form({ route, method }) {
   const [username, setUsername] = useState("");
@@ -36,8 +36,8 @@ function Form({ route, method }) {
 
       if (isLogin) {
         const { access, refresh, role } = res.data;
-        
         console.log("Dados recebidos no login:", res.data);
+        
         dispatch(
           login({
             user: username,
@@ -54,7 +54,6 @@ function Form({ route, method }) {
       }
     } catch (error) {
       setError(error.response?.data?.detail || "Erro ao processar a solicitação");
-      console.error(error.response?.data || error.message);
     } finally {
       setLoading(false);
     }
@@ -122,14 +121,13 @@ function Form({ route, method }) {
         )}
 
         {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
-        {loading && <LoadingIndicator />}
 
-        <button 
-          className="w-full bg-blue-500 text-white py-3 rounded-lg font-semibold hover:bg-blue-600 transition"
-          type="submit" 
+        <button
+          type="submit"
+          className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700"
           disabled={loading}
         >
-          {formTitle}
+          {loading ? <LoadingIndicator /> : isLogin ? "Entrar" : "Cadastrar"}
         </button>
       </form>
     </div>

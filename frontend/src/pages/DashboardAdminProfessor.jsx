@@ -1,40 +1,28 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { Disclosure, DisclosureButton, DisclosurePanel, Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
-import { Bars3Icon, BellIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 
 function classNames(...classes) {
   return classes.filter(Boolean).join(" ");
 }
 
 function DashboardAdminProfessor() {
-  const roleFromRedux = useSelector((state) => state.auth.role);
-  const [userRole, setUserRole] = useState(() => {
-    // Tenta carregar o papel do localStorage, caso não tenha, usa o roleFromRedux
-    return localStorage.getItem("user_role") || roleFromRedux || null;
-  });
+  const { role, user } = useSelector((state) => state.auth); // Obter dados do Redux
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (roleFromRedux) {
-      setUserRole(roleFromRedux);
-      localStorage.setItem("user_role", roleFromRedux);
+    if (!role) {
+      navigate("/auth/login"); // Caso o usuário não tenha papel, redireciona para login
     }
-  }, [roleFromRedux]);
+  }, [role, navigate]);
 
-  const user = {
-    name: "Tom Cook",
-    email: "tom@example.com",
-    imageUrl:
-      "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-};
-
-const navigation = [
+  const navigation = [
     { name: "Home", href: "#", current: true },
     { name: "Gerenciar Faltas", href: "/absences/professor/", current: false },
     { name: "Pedidos de Justificativa", href: "/professor/requests/", current: false },
-    ...(userRole === "admin" ? [
+    ...(role === "admin" ? [
       { name: "Cadastrar Novo Usuário", href: "/auth/register", current: false }
     ] : []), 
   ];
@@ -43,7 +31,7 @@ const navigation = [
     { name: "Logout", href: "/logout" },
   ];
 
-  if (userRole === null) {
+  if (!user) {
     return <p className="text-center text-gray-500">Carregando...</p>;
   }
 
@@ -55,7 +43,7 @@ const navigation = [
             <div className="flex items-center">
               <div className="shrink-0">
                 <img
-                  alt="Your Company"
+                  alt="Logo"
                   src="https://tailwindui.com/plus/img/logos/mark.svg?color=indigo&shade=500"
                   className="size-8"
                 />
@@ -80,21 +68,12 @@ const navigation = [
             </div>
             <div className="hidden md:block">
               <div className="ml-4 flex items-center md:ml-6">
-                <button
-                  type="button"
-                  className="relative rounded-full bg-gray-800 p-1 text-gray-400 hover:text-white focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800 focus:outline-hidden"
-                >
-                  <span className="absolute -inset-1.5" />
-                  <span className="sr-only">View notifications</span>
-                  <BellIcon aria-hidden="true" className="size-6" />
-                </button>
-
                 <Menu as="div" className="relative ml-3">
                   <div>
                     <MenuButton className="relative flex max-w-xs items-center rounded-full bg-gray-800 text-sm focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800 focus:outline-hidden">
                       <span className="absolute -inset-1.5" />
                       <span className="sr-only">Open user menu</span>
-                      <img alt="" src={user.imageUrl} className="size-8 rounded-full" />
+                      <img alt={user.username} src={user.imageUrl || "default-image-url.jpg"} className="size-8 rounded-full" />
                     </MenuButton>
                   </div>
                   <MenuItems
@@ -125,46 +104,15 @@ const navigation = [
             </div>
           </div>
         </div>
-
-        <DisclosurePanel className="md:hidden">
-          <div className="space-y-1 px-2 pt-2 pb-3 sm:px-3">
-            {navigation.map((item) => (
-              <DisclosureButton
-                key={item.name}
-                as="a"
-                href={item.href}
-                className={classNames(
-                  item.current ? "bg-gray-900 text-white" : "text-gray-300 hover:bg-gray-700 hover:text-white",
-                  "block rounded-md px-3 py-2 text-base font-medium"
-                )}
-              >
-                {item.name}
-              </DisclosureButton>
-            ))}
-          </div>
-        </DisclosurePanel>
       </Disclosure>
 
       <header className="bg-white shadow-sm">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">Olá </h1>
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900">Seja bem-vindo, {user.username}!</h1>
         </div>
       </header>
 
       <main>
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-          {userRole === "admin" && (
-            <div className="mt-6">
-
-              <button
-                className="bg-red-500 text-white px-4 py-2 rounded-lg"
-                onClick={() => navigate("/auth/register/")}
-              >
-                Cadastrar Novo Usuário
-              </button>
-            </div>
-          )}
-        </div>
       </main>
     </div>
   );
