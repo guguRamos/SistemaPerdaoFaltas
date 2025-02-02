@@ -63,7 +63,7 @@ function Form({ route, method }) {
             })
           );
   
-          let redirectPath = role === "student" ? "/aluno/absences/" : "/dashboard/";
+          let redirectPath = "/dashboard/";
           navigate(redirectPath);
         } else {
           alert("Usuário registrado com sucesso!");

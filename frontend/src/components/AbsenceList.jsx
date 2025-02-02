@@ -19,6 +19,7 @@ function AbsenceList() {
     const fetchAbsences = async () => {
       setLoading(true);
       setError(null);
+      console.log("Token recuperado:", token);
 
       try {
         const response = await api.get("/api/absences/", {
@@ -26,8 +27,10 @@ function AbsenceList() {
             Authorization: `Bearer ${token}`,
           },
         });
+        console.log("Dados recebidos da API:", response.data);
         setAbsences(response.data);
       } catch (err) {
+        console.error("Erro ao carregar as faltas:", err);
         setError("Erro ao carregar as faltas.");
       } finally {
         setLoading(false);
@@ -43,14 +46,17 @@ function AbsenceList() {
   }, [token]);
 
   const handleAbsenceChange = async (absence, isChecked) => {
+    console.log("Alterando falta para:", { absence, isChecked });
+  
     try {
-      await api.put(
-        "/api/absences/update/",
+      // 🔹 Enviando requisição PUT para atualizar is_absent
+      const response = await api.put(
+        `/api/absences/update/`, // Certifique-se de que essa rota está correta no backend
         {
-          user_id: absence.user_id,
+          user_id: absence.student, // Pegando o ID do aluno
           discipline: absence.discipline,
-          is_absent: isChecked,
-          reason: absence.reason || "Esse é o motivo",
+          is_absent: isChecked, // Enviando true ou false conforme o checkbox
+          reason: absence.reason || "Motivo atualizado",
         },
         {
           headers: {
@@ -58,16 +64,22 @@ function AbsenceList() {
           },
         }
       );
-      // Atualizar o estado local para refletir a mudança
+  
+      console.log("Resposta da API:", response.data);
+  
+      // 🔹 Atualiza o estado local após sucesso na API
       setAbsences((prevAbsences) =>
         prevAbsences.map((a) =>
           a.id === absence.id ? { ...a, is_absent: isChecked } : a
         )
       );
     } catch (err) {
+      console.error("Erro ao atualizar a falta:", err);
       setError("Erro ao atualizar a falta.");
     }
   };
+  
+  
 
   if (loading) return <p className="text-center">Carregando...</p>;
   if (error) return <p className="text-center text-red-500">{error}</p>;
@@ -85,7 +97,7 @@ function AbsenceList() {
         <td className="border p-3 flex justify-center items-center">
           <input
             type="checkbox"
-            checked={absence.is_absent}
+            checked={absence.is_absent || false} // 🔹 Garante que sempre será true/false
             onChange={(e) => handleAbsenceChange(absence, e.target.checked)}
             className="w-5 h-5 cursor-pointer"
           />
@@ -98,6 +110,7 @@ function AbsenceList() {
       </td>
     );
   };
+  
 
   return (
     <div className="min-h-full">
