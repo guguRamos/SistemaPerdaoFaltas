@@ -81,10 +81,10 @@ function App() {
         />
 
         <Route
-          path="/absences/professor"
+          path="/professor/requests/"
           element={
             <ProtectedRoute allowedRoles={["professor", "admin"]}>
-              <AbsencesProfessor />
+              <RequestsProfessor />
             </ProtectedRoute>
           }
         />
