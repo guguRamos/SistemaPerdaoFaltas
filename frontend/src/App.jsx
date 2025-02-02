@@ -5,53 +5,74 @@ import Register from "./pages/Register";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
-// Importando as páginas específicas
+// Importando as páginas
 import AbsencesAluno from "./pages/AbsencesAluno";
 import RequestsAluno from "./pages/RequestsAluno";
+import DashboardAdminProfessor from "./pages/DashboardAdminProfessor";
+
 import AbsencesProfessor from "./pages/AbsencesProfessor";
 import RequestsProfessor from "./pages/RequestsProfessor";
 
 // Função de Logout
 function Logout() {
   localStorage.clear();
-  return <Navigate to="/api/auth/login" />;
+  return <Navigate to="/auth/login/" />;
 }
 
-// Componente principal
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-
-        {/* Rotas para Alunos */}
+        {/* 🔹 Rotas de Autenticação */}
+        <Route path="/auth/login/" element={<Login />} />
         <Route
-          path="/aluno/faltas"
+          path="/auth/register/"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <Register />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* 🔹 Rotas para ALUNOS */}
+        <Route
+          path="/aluno/absences/"
+          element={
+            <ProtectedRoute allowedRoles={["student"]}>
               <AbsencesAluno />
             </ProtectedRoute>
           }
         />
         <Route
-          path="/aluno/pedidos"
+          path="/aluno/forgiveness-requests/"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={["student"]}>
               <RequestsAluno />
             </ProtectedRoute>
           }
         />
 
-        {/* Rotas para Professores */}
+        {/* 🔹 Dashboard para PROFESSORES e ADMINISTRADORES */}
         <Route
-          path="/professor/faltas"
+          path="/dashboard/"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={["professor", "admin"]}>
+              <DashboardAdminProfessor />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/absences/professor"
+          element={
+            <ProtectedRoute allowedRoles={["professor", "admin"]}>
               <AbsencesProfessor />
             </ProtectedRoute>
           }
         />
+
         <Route
-          path="/professor/pedidos"
+          path="/professor/requests"
           element={
             <ProtectedRoute>
               <RequestsProfessor />
@@ -59,10 +80,19 @@ function App() {
           }
         />
 
-        {/* Rotas públicas */}
-        <Route path="/api/auth/login" element={<Login />} />
+        <Route
+          path="/absences/professor"
+          element={
+            <ProtectedRoute allowedRoles={["professor", "admin"]}>
+              <AbsencesProfessor />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* 🔹 Logout */}
         <Route path="/logout" element={<Logout />} />
-        <Route path="/register" element={<Register />} />
+
+        {/* 🔹 Página 404 */}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>

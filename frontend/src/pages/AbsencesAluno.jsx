@@ -1,5 +1,5 @@
 function AbsencesAluno(){
-    return <div>AbsencesAluno</div>
+    return <div>Olá, você é um aluno</div>
 }
 
 export default AbsencesAluno

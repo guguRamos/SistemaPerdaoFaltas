@@ -7,36 +7,49 @@ import LoadingIndicator from "./LoadingIndicator";
 
 function Form({ route, method }) {
     const [username, setUsername] = useState("");
+    const [name, setName] = useState("");  
     const [password, setPassword] = useState("");
-    const [email, setEmail] = useState("");  
-    const [role, setRole] = useState("student");  
+    const [email, setEmail] = useState("");
+    const [role, setRole] = useState("student");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const navigate = useNavigate();
 
     const isLogin = method === "login";
-    const name = isLogin ? "Login" : "Register";
+    const formTitle = isLogin ? "Login" : "Register";
 
     const handleSubmit = async (e) => {
-        e.preventDefault(); //Evita que o navegador recarregue ao enviar o formulário.
+        e.preventDefault();
         setLoading(true);
         setError(null);
 
-        const payload = isLogin // Usando ternário para se tiver na página de cadastro, esperar apenas username e senha
+        const payload = isLogin
             ? { username, password }
-            : { username, password, email, role }; 
+            : { username, name, password, email, role };  
 
-        const route = isLogin ? "/api/auth/login/" : "/api/auth/register/";
+        const apiRoute = isLogin ? "/api/auth/login/" : "/api/auth/register/";
 
         try {
-            const res = await api.post(route, payload);
+            const res = await api.post(apiRoute, payload);
+
             if (isLogin) {
                 localStorage.setItem(ACCESS_TOKEN, res.data.access);
                 localStorage.setItem(REFRESH_TOKEN, res.data.refresh);
-                navigate("/");
+                localStorage.setItem("user_role", res.data.role);
+
+                console.log("Role recebido:", res.data.role); 
+                
+                let redirectPath = "/";
+                if (res.data.role === "student") {
+                    redirectPath = "/aluno/absences/";
+                } else if (res.data.role === "professor" || res.data.role === "admin") {
+                    redirectPath = "/dashboard/";
+                  }
+
+                navigate(redirectPath);
             } else {
                 alert("Usuário registrado com sucesso!");
-                navigate("/api/auth/login");
+                navigate("/auth/login");
             }
         } catch (error) {
             setError(error.response?.data?.detail || "Erro ao processar a solicitação");
@@ -48,7 +61,18 @@ function Form({ route, method }) {
 
     return (
         <form onSubmit={handleSubmit} className="form-container">
-            <h1>{name}</h1>
+            <h1>{formTitle}</h1>
+
+            {!isLogin && (
+                <input
+                    className="form-input"
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Nome Completo"
+                    required
+                />
+            )}
 
             <input
                 className="form-input"
@@ -93,11 +117,10 @@ function Form({ route, method }) {
             )}
 
             {error && <p className="error-message">{error}</p>}
-
             {loading && <LoadingIndicator />}
 
             <button className="form-button" type="submit" disabled={loading}>
-                {name}
+                {formTitle}
             </button>
         </form>
     );
