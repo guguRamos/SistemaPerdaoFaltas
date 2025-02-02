@@ -1,9 +1,9 @@
 import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = {
-  user: null,
+  user: JSON.parse(localStorage.getItem('user')) || null,
   token: localStorage.getItem('ACCESS_TOKEN') || null,
-  role: localStorage.getItem('user_role') || '',
+  role: localStorage.getItem('user_role') || null,
 };
 
 const authSlice = createSlice({
@@ -12,20 +12,20 @@ const authSlice = createSlice({
   reducers: {
     login: (state, action) => {
       const { user, token, role } = action.payload;
+
       state.user = user;
       state.token = token;
       state.role = role;
 
-      // Armazena no localStorage
+      localStorage.setItem('user', JSON.stringify(user)); 
       localStorage.setItem('ACCESS_TOKEN', token);
       localStorage.setItem('user_role', role);
     },
     logout: (state) => {
       state.user = null;
       state.token = null;
-      state.role = '';
+      state.role = null;
 
-      // Limpa localStorage
       localStorage.clear();
     },
   },

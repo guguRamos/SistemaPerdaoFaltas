@@ -1,104 +1,123 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
-import { ACCESS_TOKEN } from "../constants";
-import LoadingIndicator from "./LoadingIndicator";
+import api from "../api";
+import { getAuthToken, getUserRole } from "../utils/authHelpers";
 
 function AbsenceList() {
   const [absences, setAbsences] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const userRole = localStorage.getItem("user_role"); // Supondo que a role seja armazenada após o login
-  const userId = localStorage.getItem("user_id");
+  const token = getAuthToken();
+  const userRole = getUserRole(); 
 
   useEffect(() => {
-    console.log
     const fetchAbsences = async () => {
-        try {
-          let url = "/api/absences/";
-          const response = await axios.get(url, {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem(ACCESS_TOKEN)}`,
-            },
-          });
+      setLoading(true);
+      setError(null);
 
-          if (userRole === "student") {
-            const filteredAbsences = response.data.filter(absence => absence.student_id === Number(userId));
-            setAbsences(filteredAbsences);
-          } else {
-            setAbsences(response.data);
-          }
-        } catch (error) {
-          setError("Erro ao carregar as faltas");
-          console.error(error);
-        } finally {
-          setLoading(false);
+      try {
+        const response = await api.get("/api/absences/", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        setAbsences(response.data);
+      } catch (err) {
+        setError("Erro ao carregar as faltas.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (token) {
+      fetchAbsences();
+    } else {
+      setError("Usuário não autenticado. Faça login novamente.");
+      setLoading(false);
+    }
+  }, [token]);
+
+  const handleAbsenceChange = async (absence, isChecked) => {
+    try {
+      await api.put(
+        "/api/absences/update/",
+        {
+          user_id: absence.user_id,
+          discipline: absence.discipline,
+          is_absent: isChecked,
+          reason: absence.reason || "Esse é o motivo",
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
-      };
-      
-    fetchAbsences();
-  }, [userRole, userId]);
-
-  if (loading) {
-    return <LoadingIndicator />;
-  }
-
-  if (error) {
-    return <div>{error}</div>;
-  }
-
-  const handleForgivenessRequest = (absenceId) => {
-    // Lógica para o aluno solicitar perdão para a falta
-    console.log(`Solicitando perdão para a falta de ID: ${absenceId}`);
-    // Você pode fazer uma requisição à API para criar a solicitação de perdão
+      );
+      // Atualizar o estado local para refletir a mudança
+      setAbsences((prevAbsences) =>
+        prevAbsences.map((a) =>
+          a.id === absence.id ? { ...a, is_absent: isChecked } : a
+        )
+      );
+    } catch (err) {
+      setError("Erro ao atualizar a falta.");
+    }
   };
 
-  const handleMarkAbsence = (absenceId, isAbsent) => {
-    // Lógica para o professor ou admin marcar a falta
-    console.log(`Marcando a falta com ID: ${absenceId} como ${isAbsent ? "presente" : "ausente"}`);
-    // Você pode fazer uma requisição à API para atualizar o status da falta
+  if (loading) return <p className="text-center">Carregando...</p>;
+  if (error) return <p className="text-center text-red-500">{error}</p>;
+
+  const renderActions = (absence) => {
+    if (userRole === "admin" || userRole === "professor") {
+      return (
+        <td className="border p-3 flex justify-center items-center">
+          <input
+            type="checkbox"
+            checked={absence.is_absent}
+            onChange={(e) => handleAbsenceChange(absence, e.target.checked)}
+            className="w-5 h-5 cursor-pointer"
+          />
+        </td>
+      );
+    }
+    return (
+      <td className="border p-3 text-gray-500">
+        {absence.is_absent ? "Falta Marcada" : "Presente"}
+      </td>
+    );
   };
 
   return (
-    <div>
-      <h2>{userRole === "student" ? "Minhas Faltas" : "Faltas de Todos os Alunos"}</h2>
-      <table>
+    <div className="p-6">
+      <h1 className="text-3xl font-bold text-center mb-6">Controle de Faltas</h1>
+
+      {userRole !== "student" && (
+        <div className="flex justify-between items-center mb-6">
+          <input
+            type="text"
+            placeholder="Pesquise o nome do Aluno"
+            className="w-1/3 px-4 py-2 border rounded-lg shadow focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+      )}
+
+      <table className="w-full border-collapse border border-gray-300 text-center">
         <thead>
-          <tr>
-            <th>{userRole === "student" ? "Disciplina" : "Aluno"}</th>
-            <th>Data</th>
-            <th>Motivo</th>
-            {userRole === "student" && <th>Solicitar Perdão</th>}
-            {userRole !== "student" && <th>Marcar Falta</th>}
+          <tr className="bg-black text-white">
+            <th className="border p-3">Aluno</th>
+            <th className="border p-3">Comentário</th>
+            <th className="border p-3">Disciplina</th>
+            <th className="border p-3">Data</th>
+            <th className="border p-3">Falta</th>
           </tr>
         </thead>
         <tbody>
           {absences.map((absence) => (
-            <tr key={absence.id}>
-              <td>{userRole === "student" ? absence.discipline : absence.student_username}</td>
-              <td>{absence.date}</td>
-              <td>{absence.reason || "Motivo não informado"}</td>
-              {userRole === "student" && (
-                <td>
-                  <button onClick={() => handleForgivenessRequest(absence.id)}>
-                    Solicitar Perdão
-                  </button>
-                </td>
-              )}
-              {userRole !== "student" && (
-                <td>
-                  <input
-                    type="checkbox"
-                    checked={absence.isAbsent} // Supondo que o status da falta tenha esse campo
-                    onChange={(e) =>
-                      handleMarkAbsence(absence.id, e.target.checked)
-                    }
-                  />
-                  <textarea
-                    placeholder="Justifique a falta"
-                    defaultValue={absence.justification || ""}
-                  />
-                </td>
-              )}
+            <tr key={absence.id} className="border-b hover:bg-gray-100">
+              <td className="border p-3">{absence.student_username}</td>
+              <td className="border p-3">{absence.reason || "—"}</td>
+              <td className="border p-3">{absence.discipline}</td>
+              <td className="border p-3">{absence.date}</td>
+              {renderActions(absence)}
             </tr>
           ))}
         </tbody>

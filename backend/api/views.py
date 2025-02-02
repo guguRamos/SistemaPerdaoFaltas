@@ -7,6 +7,7 @@ from .permissions import IsAdmin, IsProfessor, IsStudent
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.response import Response
 from rest_framework import status
+from django.utils.timezone import now
 
 class CustomTokenObtainPairView(TokenObtainPairView):
 
@@ -63,6 +64,54 @@ class AbsenceCreateView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save()
+class AbsenceUpdateView(generics.UpdateAPIView):
+    queryset = Absence.objects.all()
+    serializer_class = AbsencesSerializer
+    permission_classes = [permissions.IsAuthenticated, IsProfessor | IsAdmin]
+
+    def put(self, request, *args, **kwargs):
+        user = request.user
+
+        # Verifica permissões
+        if not user.role in ["professor", "admin"]:
+            return Response({"error": "Permissão negada"}, status=status.HTTP_403_FORBIDDEN)
+
+        # Dados da requisição
+        user_id = request.data.get("user_id")
+        discipline = request.data.get("discipline")
+        is_absent = request.data.get("is_absent")  # True = faltou, False = presente
+        reason = request.data.get("reason", "")
+
+        # Valida usuário como estudante
+        try:
+            student = User.objects.get(id=user_id, role="student")
+        except User.DoesNotExist:
+            return Response({"error": "Usuário não encontrado ou não é um estudante."}, status=status.HTTP_404_NOT_FOUND)
+
+        if is_absent:
+            # Registrar falta
+            absence, created = Absence.objects.get_or_create(
+                student=student,
+                discipline=discipline,
+                date=now().date(),
+                defaults={"reason": ""}
+            )
+            # Atualizar reason caso já exista a falta
+            if not created and reason:
+                absence.reason = reason
+                absence.save()
+            return Response({"message": "Falta registrada", "absence": AbsencesSerializer(absence).data}, status=status.HTTP_201_CREATED)
+        else:
+            # Remover falta se desmarcar
+            deleted, _ = Absence.objects.filter(student=student, discipline=discipline, date=now().date()).delete()
+            if deleted:
+                return Response({"message": "Falta removida"}, status=status.HTTP_200_OK)
+            return Response({"message": "Nenhuma falta encontrada para remover"}, status=status.HTTP_404_NOT_FOUND)
+
+class AbsenceCheckView(generics.ListAPIView):
+    queryset = Absence.objects.all()
+    serializer_class = AbsencesSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
 #View de solicitação de Perdão
 
