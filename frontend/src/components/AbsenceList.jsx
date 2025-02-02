@@ -13,28 +13,28 @@ function AbsenceList() {
   useEffect(() => {
     console.log
     const fetchAbsences = async () => {
-      try {
-        let url = "/api/absences/";
-        
-        // Alunos veem apenas suas próprias faltas
-        if (userRole === "student") {
-          url = `/api/absences/?student=${userId}`; 
+        try {
+          let url = "/api/absences/";
+          const response = await axios.get(url, {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem(ACCESS_TOKEN)}`,
+            },
+          });
+
+          if (userRole === "student") {
+            const filteredAbsences = response.data.filter(absence => absence.student_id === Number(userId));
+            setAbsences(filteredAbsences);
+          } else {
+            setAbsences(response.data);
+          }
+        } catch (error) {
+          setError("Erro ao carregar as faltas");
+          console.error(error);
+        } finally {
+          setLoading(false);
         }
-
-        const response = await axios.get(url, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem(ACCESS_TOKEN)}`,
-          },
-        });
-        setAbsences(response.data);
-      } catch (error) {
-        setError("Erro ao carregar as faltas");
-        console.error(error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
+      };
+      
     fetchAbsences();
   }, [userRole, userId]);
 

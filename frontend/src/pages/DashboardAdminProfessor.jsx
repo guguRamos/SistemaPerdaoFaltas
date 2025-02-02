@@ -1,18 +1,10 @@
 import React from "react";
-import { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 
 function DashboardAdminProfessor() {
-  const [role, setRole] = useState(null);
+  const role = useSelector((state) => state.auth.user?.role);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const userRole = localStorage.getItem("user_role");
-    if (!userRole) {
-      navigate("/auth/login/");
-    }
-    setRole(userRole);
-  }, [navigate]);
 
   return (
     <div>
