@@ -186,11 +186,11 @@ function Form({ route, method }) {
             {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
   
             <button
-              type="submit"
-              className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700"
-              disabled={loading}
+            type="submit"
+            className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 flex justify-center items-center"
+            disabled={loading}
             >
-              {loading ? <LoadingIndicator /> : isLogin ? "Entrar" : "Cadastrar"}
+            {loading ? <LoadingIndicator className ="size-5" /> : isLogin ? "Entrar" : "Cadastrar"}
             </button>
           </form>
         </div>

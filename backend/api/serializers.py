@@ -27,7 +27,7 @@ class AbsencesSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Absence
-        fields = ["id", "student", "student_username", "discipline", "date", "reason", "created_at"]
+        fields = ["id", "student", "student_username", "discipline", "date", "reason","is_absent", "created_at"]
         extra_kwargs = {
             "created_at": {"read_only": True},
             "reason": {"allow_blank": True},

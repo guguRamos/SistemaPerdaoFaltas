@@ -28,6 +28,7 @@ function AbsenceList() {
           const response = await api.get("/api/absences/", {
             headers: { Authorization: `Bearer ${token}` },
           });
+          console.log("Dados da API:", response.data);
           setAbsences(response.data);
         } catch (err) {
           if (err.response?.status === 401) { // Se for erro 401 (Unauthorized)
@@ -68,6 +69,30 @@ function AbsenceList() {
     }
   }, [token]);
 
+  const handleFileUpload = async (absenceId, event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("absence", absenceId);
+    formData.append("justification_file", file);
+
+    try {
+      const response = await api.post("/api/forgiveness-requests/create/", formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      alert("Justificativa enviada com sucesso!");
+      console.log("Resposta da API:", response.data);
+    } catch (err) {
+      alert("Erro ao enviar justificativa.");
+      console.error(err);
+    }
+  };
+
   const handleAbsenceChange = async (absence, updatedFields) => {
     console.log("Alterando falta para:", { ...absence, ...updatedFields });
   
@@ -90,9 +115,10 @@ function AbsenceList() {
       // 🔹 Atualiza o estado local
       setAbsences((prevAbsences) =>
         prevAbsences.map((a) =>
-          a.id === absence.id ? { ...a, ...updatedFields } : a
+          a.id === absence.id ? { ...a, ...updatedFields, is_absent: updatedFields.is_absent } : a
         )
       );
+      
     } catch (err) {
       console.error("Erro ao atualizar a falta:", err);
       setError("Erro ao atualizar a falta.");
@@ -109,15 +135,16 @@ function AbsenceList() {
   const navigation = [
     { name: "Home", href: "/dashboard/", current: false },
     { name: "Gerenciar Faltas", href: "/absences/professor/", current: true },
-    { name: "Pedidos de Justificativa", href: "/professor/requests/", current: false },
+    { name: "Solicitações de Perdão", href: "/professor/requests/", current: false },
     ...(userRole === "admin" ? [{ name: "Cadastrar Novo Usuário", href: "/auth/register", current: false }] : []),
   ];
 
   const renderActions = (absence) => {
     if (userRole === "admin" || userRole === "professor") {
       return (
-        <td>
-          <input
+        <td className="border p-3">
+        {userRole === "admin" || userRole === "professor" ? (
+            <input
             type="checkbox"
             checked={absence.is_absent || false}
             onChange={(e) =>
@@ -125,6 +152,12 @@ function AbsenceList() {
             }
             className="w-6 h-6 cursor-pointer accent-blue-500"
             />
+        ) : (
+            <span className={absence.is_absent ? "text-red-500 font-bold" : "text-green-500 font-bold"}>
+            {absence.is_absent ? "Falta" : "Presente"}
+            </span>
+            
+        )}
         </td>
       );
     }
@@ -202,10 +235,11 @@ function AbsenceList() {
           <thead>
             <tr className="bg-black text-white">
               <th className="border p-3">Aluno</th>
-              <th className="border p-3">Comentário</th>
+              <th className="border p-3">Razão</th>
               <th className="border p-3">Disciplina</th>
               <th className="border p-3">Data</th>
               <th className="border p-3">Falta</th>
+              {userRole === "student" && <th className="border p-3">Solicitação de Perdão</th>}
             </tr>
           </thead>
           <tbody>
@@ -248,6 +282,21 @@ function AbsenceList() {
 
                 <td className="border p-3">{absence.date}</td>
                 {renderActions(absence)}
+
+                
+                {userRole === "student" && (
+                  <td className="border p-3">
+                  <label className="cursor-pointer bg-blue-500 text-white px-3 py-2 rounded hover:bg-blue-600">
+                    Escolher Arquivo
+                    <input
+                      type="file"
+                      className="hidden"
+                      onChange={(e) => handleFileUpload(absence.id, e)}
+                    />
+                  </label>
+                  </td>
+                )}
+                
                 </tr>
             ))}
             </tbody>

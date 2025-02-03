@@ -21,7 +21,7 @@ function DashboardAdminProfessor() {
   const navigation = [
     { name: "Home", href: "#", current: true },
     { name: "Gerenciar Faltas", href: "/absences/professor/", current: false },
-    { name: "Pedidos de Justificativa", href: "/professor/requests/", current: false },
+    { name: "Solicitações de Perdão", href: "/professor/requests/", current: false },
     ...(role === "admin" ? [
       { name: "Cadastrar Novo Usuário", href: "/auth/register", current: false }
     ] : []), 
