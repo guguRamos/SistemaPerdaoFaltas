@@ -69,44 +69,31 @@ class AbsenceUpdateView(generics.UpdateAPIView):
     serializer_class = AbsencesSerializer
     permission_classes = [permissions.IsAuthenticated, IsProfessor | IsAdmin]
 
-    def put(self, request, *args, **kwargs):
+    def put(self, request, pk, *args, **kwargs):
         user = request.user
 
         # Verifica permissões
-        if not user.role in ["professor", "admin"]:
+        if user.role not in ["professor", "admin"]:
             return Response({"error": "Permissão negada"}, status=status.HTTP_403_FORBIDDEN)
 
-        # Dados da requisição
-        user_id = request.data.get("user_id")
-        discipline = request.data.get("discipline")
-        is_absent = request.data.get("is_absent")  # True = faltou, False = presente
-        reason = request.data.get("reason", "")
-
-        # Valida usuário como estudante
         try:
-            student = User.objects.get(id=user_id, role="student")
-        except User.DoesNotExist:
-            return Response({"error": "Usuário não encontrado ou não é um estudante."}, status=status.HTTP_404_NOT_FOUND)
+            absence = Absence.objects.get(id=pk)
+        except Absence.DoesNotExist:
+            return Response({"error": "Falta não encontrada."}, status=status.HTTP_404_NOT_FOUND)
 
-        if is_absent:
-            # Registrar falta
-            absence, created = Absence.objects.get_or_create(
-                student=student,
-                discipline=discipline,
-                date=now().date(),
-                defaults={"reason": ""}
-            )
-            # Atualizar reason caso já exista a falta
-            if not created and reason:
-                absence.reason = reason
-                absence.save()
-            return Response({"message": "Falta registrada", "absence": AbsencesSerializer(absence).data}, status=status.HTTP_201_CREATED)
-        else:
-            # Remover falta se desmarcar
-            deleted, _ = Absence.objects.filter(student=student, discipline=discipline, date=now().date()).delete()
-            if deleted:
-                return Response({"message": "Falta removida"}, status=status.HTTP_200_OK)
-            return Response({"message": "Nenhuma falta encontrada para remover"}, status=status.HTTP_404_NOT_FOUND)
+        # Obtém os dados da requisição
+        discipline = request.data.get("discipline", absence.discipline)
+        is_absent = request.data.get("is_absent", absence.is_absent)
+        reason = request.data.get("reason", absence.reason)
+
+        # Atualiza os campos necessários
+        absence.discipline = discipline
+        absence.is_absent = is_absent
+        absence.reason = reason
+        absence.save()
+
+        return Response({"message": "Falta atualizada com sucesso", "absence": AbsencesSerializer(absence).data}, status=status.HTTP_200_OK)
+
 
 class AbsenceCheckView(generics.ListAPIView):
     queryset = Absence.objects.all()

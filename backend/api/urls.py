@@ -12,7 +12,7 @@ urlpatterns = [
     path("absences/", views.AbsenceListView.as_view(), name="absence-list"),
     path("absences/create/", views.AbsenceCreateView.as_view(), name="absence-create"), 
     path('absences/check/', views.AbsenceCheckView.as_view(), name='absence-check'), 
-    path('absences/update/', views.AbsenceUpdateView.as_view(), name='absence-update'), 
+    path("absences/update/<int:pk>/", views.AbsenceUpdateView.as_view(), name="absence-update"),
 
     # Rotas de Solicitações de Perdão
     path("forgiveness-requests/", views.ForgivenessRequestListView.as_view(), name="forgiveness-request-list"), 

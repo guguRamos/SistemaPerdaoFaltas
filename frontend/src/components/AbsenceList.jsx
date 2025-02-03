@@ -17,25 +17,47 @@ function AbsenceList() {
 
   useEffect(() => {
     const fetchAbsences = async () => {
-      setLoading(true);
-      setError(null);
-      console.log("Token recuperado:", token);
-
-      try {
-        const response = await api.get("/api/absences/", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        console.log("Dados recebidos da API:", response.data);
-        setAbsences(response.data);
-      } catch (err) {
-        console.error("Erro ao carregar as faltas:", err);
-        setError("Erro ao carregar as faltas.");
-      } finally {
-        setLoading(false);
-      }
-    };
+        setLoading(true);
+        setError(null);
+      
+        let token = getAuthToken(); // Pega o token atual
+        console.log("Token antes da requisição:", token);
+      
+        try {
+          const response = await api.get("/api/absences/", {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          setAbsences(response.data);
+        } catch (err) {
+          if (err.response?.status === 401) { // Se for erro 401 (Unauthorized)
+            console.log("Token expirado, tentando atualizar...");
+            token = await refreshToken();
+            
+            if (token) {
+              console.log("Token atualizado, refazendo requisição...");
+              try {
+                const retryResponse = await api.get("/api/absences/", {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                setAbsences(retryResponse.data);
+              } catch (retryErr) {
+                console.error("Erro ao refazer requisição:", retryErr);
+                setError("Erro ao carregar as faltas.");
+              }
+            } else {
+              console.error("Refresh token falhou, redirecionando para login.");
+              setError("Sessão expirada. Faça login novamente.");
+              localStorage.clear();
+            }
+          } else {
+            console.error("Erro ao carregar as faltas:", err);
+            setError("Erro ao carregar as faltas.");
+          }
+        } finally {
+          setLoading(false);
+        }
+      };
+      
 
     if (token) {
       fetchAbsences();
@@ -45,32 +67,29 @@ function AbsenceList() {
     }
   }, [token]);
 
-  const handleAbsenceChange = async (absence, isChecked) => {
-    console.log("Alterando falta para:", { absence, isChecked });
+  const handleAbsenceChange = async (absence, updatedFields) => {
+    console.log("Alterando falta para:", { ...absence, ...updatedFields });
   
     try {
-      // 🔹 Enviando requisição PUT para atualizar is_absent
       const response = await api.put(
-        `/api/absences/update/`, // Certifique-se de que essa rota está correta no backend
+        `/api/absences/update/${absence.id}/`,
         {
-          user_id: absence.student, // Pegando o ID do aluno
-          discipline: absence.discipline,
-          is_absent: isChecked, // Enviando true ou false conforme o checkbox
-          reason: absence.reason || "Motivo atualizado",
+          user_id: absence.student,
+          discipline: updatedFields.discipline || absence.discipline,
+          is_absent: updatedFields.is_absent ?? absence.is_absent,
+          reason: updatedFields.reason || absence.reason || "Motivo atualizado",
         },
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
   
       console.log("Resposta da API:", response.data);
   
-      // 🔹 Atualiza o estado local após sucesso na API
+      // 🔹 Atualiza o estado local
       setAbsences((prevAbsences) =>
         prevAbsences.map((a) =>
-          a.id === absence.id ? { ...a, is_absent: isChecked } : a
+          a.id === absence.id ? { ...a, ...updatedFields } : a
         )
       );
     } catch (err) {
@@ -78,6 +97,7 @@ function AbsenceList() {
       setError("Erro ao atualizar a falta.");
     }
   };
+  
   
   
 
@@ -94,12 +114,13 @@ function AbsenceList() {
   const renderActions = (absence) => {
     if (userRole === "admin" || userRole === "professor") {
       return (
-        <td className="border p-3 flex justify-center items-center">
+        <td>
           <input
             type="checkbox"
-            checked={absence.is_absent || false} // 🔹 Garante que sempre será true/false
-            onChange={(e) => handleAbsenceChange(absence, e.target.checked)}
-            className="w-5 h-5 cursor-pointer"
+            checked={absence.is_absent || false}
+            onChange={(e) =>
+              handleAbsenceChange(absence, { is_absent: e.target.checked })
+            }
           />
         </td>
       );
@@ -110,6 +131,7 @@ function AbsenceList() {
       </td>
     );
   };
+  
   
 
   return (
@@ -182,15 +204,46 @@ function AbsenceList() {
           </thead>
           <tbody>
             {absences.map((absence) => (
-              <tr key={absence.id} className="border-b hover:bg-gray-100">
+                <tr key={absence.id} className="border-b hover:bg-gray-100">
                 <td className="border p-3">{absence.student_username}</td>
-                <td className="border p-3">{absence.reason || "—"}</td>
-                <td className="border p-3">{absence.discipline}</td>
+
+                {/* 🔹 Professores/Admins podem editar o Comentário */}
+                <td className="border p-3">
+                    {userRole === "admin" || userRole === "professor" ? (
+                    <textarea
+                        className="border p-1 w-full"
+                        defaultValue={absence.reason || ""}
+                        onBlur={(e) =>
+                        handleAbsenceChange(absence, { reason: e.target.value })
+                        }
+                    />
+                    ) : (
+                    absence.reason || "—"
+                    )}
+                </td>
+
+                {/* 🔹 Professores/Admins podem editar a Disciplina */}
+                <td className="border p-3">
+                    {userRole === "admin" || userRole === "professor" ? (
+                    <input
+                        type="text"
+                        className="border p-1 w-full"
+                        defaultValue={absence.discipline}
+                        onBlur={(e) =>
+                        handleAbsenceChange(absence, { discipline: e.target.value })
+                        }
+                    />
+                    ) : (
+                    absence.discipline
+                    )}
+                </td>
+
                 <td className="border p-3">{absence.date}</td>
                 {renderActions(absence)}
-              </tr>
+                </tr>
             ))}
-          </tbody>
+            </tbody>
+
         </table>
       </div>
     </div>
