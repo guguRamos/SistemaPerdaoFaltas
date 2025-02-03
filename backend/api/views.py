@@ -124,8 +124,10 @@ class ForgivenessRequestListView(generics.ListAPIView):
             return ForgivenessRequest.objects.filter(status="PENDING")  # Professores veem apenas pendentes
         elif user.role == "admin":
             return ForgivenessRequest.objects.all()  # Admins veem tudo
+        elif user.role == "student":
+            return ForgivenessRequest.objects.filter(absence__student=user)  # Estudantes veem suas próprias solicitações
         return ForgivenessRequest.objects.none()
-    
+
 #Atualizar os status da solicitação
 #Apenas professores rejeitam ou aprovam uma solicitação
 class ForgivenessRequestUpdateView(generics.UpdateAPIView):

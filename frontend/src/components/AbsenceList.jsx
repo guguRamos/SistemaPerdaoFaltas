@@ -20,54 +20,70 @@ function AbsenceList() {
     const fetchAbsences = async () => {
         setLoading(true);
         setError(null);
-      
-        let token = getAuthToken(); // Pega o token atual
-        console.log("Token antes da requisição:", token);
-      
+    
+        let token = getAuthToken(); // Token inicial
+
         try {
-          const response = await api.get("/api/absences/", {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          console.log("Dados da API:", response.data);
-          setAbsences(response.data);
+            const [absencesResponse, forgivenessResponse] = await Promise.all([
+                api.get("/api/absences/", {
+                    headers: { Authorization: `Bearer ${token}` },
+                }),
+                api.get("/api/forgiveness-requests/", {
+                    headers: { Authorization: `Bearer ${token}` },
+                }),
+            ]);
+        
+            const forgivenessRequestsMap = {};
+            forgivenessResponse.data.forEach(request => {
+                forgivenessRequestsMap[request.absence] = true;
+            });
+        
+            const updatedAbsences = absencesResponse.data.map(absence => ({
+                ...absence,
+                has_justification: absence.has_justification || false,
+                has_forgiveness_request: forgivenessRequestsMap[absence.id] || false,
+            }));
+
+            setAbsences(updatedAbsences);
         } catch (err) {
-          if (err.response?.status === 401) { // Se for erro 401 (Unauthorized)
-            console.log("Token expirado, tentando atualizar...");
-            token = await refreshToken();
-            
-            if (token) {
-              console.log("Token atualizado, refazendo requisição...");
-              try {
-                const retryResponse = await api.get("/api/absences/", {
-                  headers: { Authorization: `Bearer ${token}` },
-                });
-                setAbsences(retryResponse.data);
-              } catch (retryErr) {
-                console.error("Erro ao refazer requisição:", retryErr);
-                setError("Erro ao carregar as faltas.");
-              }
-            } else {
-              console.error("Refresh token falhou, redirecionando para login.");
-              setError("Sessão expirada. Faça login novamente.");
-              localStorage.clear();
+            console.error("Erro na requisição:", err);
+            if (err.response?.data) {
+                console.error("Detalhes do erro:", err.response.data);
             }
-          } else {
-            console.error("Erro ao carregar as faltas:", err);
-            setError("Erro ao carregar as faltas.");
-          }
+
+            if (err.response?.status === 401) {
+                try {
+                    token = await refreshToken();
+                    if (token) {
+                        const retryResponse = await api.get("/api/absences/", {
+                            headers: { Authorization: `Bearer ${token}` },
+                        });
+
+                        setAbsences(retryResponse.data);
+                    } else {
+                        throw new Error("Erro ao atualizar token");
+                    }
+                } catch {
+                    setError("Sessão expirada. Faça login novamente.");
+                    localStorage.clear();
+                }
+            } else {
+                setError("Erro ao carregar as faltas.");
+            }
         } finally {
-          setLoading(false);
+            setLoading(false);
         }
-      };
-      
+    };
 
     if (token) {
-      fetchAbsences();
+        fetchAbsences();
     } else {
-      setError("Usuário não autenticado. Faça login novamente.");
-      setLoading(false);
+        setError("Usuário não autenticado. Faça login novamente.");
+        setLoading(false);
     }
-  }, [token]);
+}, []);
+
+  
 
   const handleFileUpload = async (absenceId, event) => {
     const file = event.target.files[0];
@@ -86,7 +102,6 @@ function AbsenceList() {
       });
 
       alert("Justificativa enviada com sucesso!");
-      console.log("Resposta da API:", response.data);
     } catch (err) {
       alert("Erro ao enviar justificativa.");
       console.error(err);
@@ -94,8 +109,6 @@ function AbsenceList() {
   };
 
   const handleAbsenceChange = async (absence, updatedFields) => {
-    console.log("Alterando falta para:", { ...absence, ...updatedFields });
-  
     try {
       const response = await api.put(
         `/api/absences/update/${absence.id}/`,
@@ -106,24 +119,17 @@ function AbsenceList() {
           reason: updatedFields.reason || absence.reason || "Motivo atualizado",
         },
         {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${getAuthToken()}` },
         }
       );
-  
-      console.log("Resposta da API:", response.data);
-  
-      // 🔹 Atualiza o estado local
       setAbsences((prevAbsences) =>
-        prevAbsences.map((a) =>
-          a.id === absence.id ? { ...a, ...updatedFields, is_absent: updatedFields.is_absent } : a
-        )
+        prevAbsences.map((a) => (a.id === absence.id ? { ...a, ...updatedFields } : a))
       );
-      
     } catch (err) {
-      console.error("Erro ao atualizar a falta:", err);
       setError("Erro ao atualizar a falta.");
     }
   };
+  
   
   const filteredAbsences = absences.filter((absence) =>
     absence.student_username.toLowerCase().includes(searchTerm.toLowerCase())
@@ -285,18 +291,23 @@ function AbsenceList() {
 
                 
                 {userRole === "student" && (
-                  <td className="border p-3">
-                  <label className="cursor-pointer bg-blue-500 text-white px-3 py-2 rounded hover:bg-blue-600">
-                    Escolher Arquivo
-                    <input
-                      type="file"
-                      className="hidden"
-                      onChange={(e) => handleFileUpload(absence.id, e)}
-                    />
-                  </label>
-                  </td>
-                )}
-                
+                    <td className="border p-3">
+                        {absence.has_forgiveness_request ? (
+                        <span className="text-green-500 font-semibold">Solicitação Enviada</span>
+                        ) : (
+                        <label className="cursor-pointer bg-black text-white px-3 py-2 rounded hover:bg-gray-800 disabled:opacity-50">
+                            Solicitar Perdão
+                            <input
+                            type="file"
+                            className="hidden"
+                            onChange={(e) => handleFileUpload(absence.id, e)}
+                            disabled={absence.has_forgiveness_request} 
+                            />
+                        </label>
+                        )}
+                    </td>
+                    )}
+
                 </tr>
             ))}
             </tbody>
