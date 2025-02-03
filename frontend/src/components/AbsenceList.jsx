@@ -14,6 +14,7 @@ function AbsenceList() {
   const [error, setError] = useState(null);
   const token = getAuthToken();
   const userRole = getUserRole();
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     const fetchAbsences = async () => {
@@ -98,8 +99,9 @@ function AbsenceList() {
     }
   };
   
-  
-  
+  const filteredAbsences = absences.filter((absence) =>
+    absence.student_username.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (loading) return <p className="text-center">Carregando...</p>;
   if (error) return <p className="text-center text-red-500">{error}</p>;
@@ -119,9 +121,10 @@ function AbsenceList() {
             type="checkbox"
             checked={absence.is_absent || false}
             onChange={(e) =>
-              handleAbsenceChange(absence, { is_absent: e.target.checked })
+                handleAbsenceChange(absence, { is_absent: e.target.checked })
             }
-          />
+            className="w-6 h-6 cursor-pointer accent-blue-500"
+            />
         </td>
       );
     }
@@ -182,12 +185,15 @@ function AbsenceList() {
       <div className="p-6">
         <h1 className="text-3xl font-bold text-center mb-6">Controle de Faltas</h1>
 
+        {/* 🔍 Input de busca */}
         {userRole !== "student" && (
           <div className="flex justify-between items-center mb-6">
             <input
               type="text"
-              placeholder="Pesquise o nome do Aluno"
+              placeholder="Pesquise o nome do aluno..."
               className="w-1/3 px-4 py-2 border rounded-lg shadow focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
         )}
@@ -203,24 +209,26 @@ function AbsenceList() {
             </tr>
           </thead>
           <tbody>
-            {absences.map((absence) => (
+            {filteredAbsences.map((absence) => (
                 <tr key={absence.id} className="border-b hover:bg-gray-100">
                 <td className="border p-3">{absence.student_username}</td>
 
                 {/* 🔹 Professores/Admins podem editar o Comentário */}
                 <td className="border p-3">
-                    {userRole === "admin" || userRole === "professor" ? (
+                {userRole === "admin" || userRole === "professor" ? (
                     <textarea
-                        className="border p-1 w-full"
-                        defaultValue={absence.reason || ""}
-                        onBlur={(e) =>
-                        handleAbsenceChange(absence, { reason: e.target.value })
-                        }
+                    className="border p-1 w-full"
+                    placeholder="Justifique a falta"
+                    defaultValue={absence.reason || ""}
+                    onBlur={(e) => {
+                        handleAbsenceChange(absence, { reason: e.target.value.trim() || "" });
+                    }}
                     />
-                    ) : (
+                ) : (
                     absence.reason || "—"
-                    )}
+                )}
                 </td>
+
 
                 {/* 🔹 Professores/Admins podem editar a Disciplina */}
                 <td className="border p-3">

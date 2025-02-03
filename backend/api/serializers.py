@@ -30,6 +30,7 @@ class AbsencesSerializer(serializers.ModelSerializer):
         fields = ["id", "student", "student_username", "discipline", "date", "reason", "created_at"]
         extra_kwargs = {
             "created_at": {"read_only": True},
+            "reason": {"allow_blank": True},
         }
     
     def create(self, validated_data):
