@@ -7,6 +7,7 @@ urlpatterns = [
     path("auth/register/", views.UserCreateView.as_view(), name="register"),
     path("auth/login/", CustomTokenObtainPairView.as_view(), name="login"),
     path("user/", views.UserListView.as_view(), name="user-list"),
+    path("students/", views.StudentListView.as_view(), name="student-list"),
 
     # Rotas de Faltas
     path("absences/", views.AbsenceListView.as_view(), name="absence-list"),

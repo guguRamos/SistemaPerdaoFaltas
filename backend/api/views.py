@@ -40,6 +40,11 @@ class UserListView(generics.ListAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated, IsAdmin]
+    
+class StudentListView(generics.ListAPIView):
+    queryset = User.objects.filter(role='student')  # Filtra apenas estudantes
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
 
 #View de Faltas
 

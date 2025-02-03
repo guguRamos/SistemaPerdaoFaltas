@@ -30,7 +30,7 @@ function Form({ route, method }) {
     const navigation = [
       { name: "Home", href: "/dashboard/", current: false },
       { name: "Gerenciar Faltas", href: "/absences/professor/", current: false },
-      { name: "Pedidos de Justificativa", href: "/professor/requests/", current: false },
+      { name: "Solicitações de Perdão", href: "/professor/requests/", current: false },
       ...(userRole === "admin" ? [{ name: "Cadastrar Novo Usuário", href: "/auth/register", current: true }] : []),
     ];
   
@@ -123,78 +123,74 @@ function Form({ route, method }) {
         )}
   
         {/* Formulário */}
-        <div className="flex justify-center items-center h-screen bg-gray-100">
-          <form 
-            onSubmit={handleSubmit} 
-            className="bg-white p-6 rounded-2xl shadow-lg w-full max-w-md"
-          >
+        <div className="min-h-screen flex flex-col justify-center items-center bg-gray-100">
+        <div className="bg-white p-6 rounded-2xl shadow-lg w-full max-w-md">
             <h1 className="text-2xl font-bold text-center mb-6">{formTitle}</h1>
-  
+
+            <form onSubmit={handleSubmit}>
+            {/* Campos do formulário */}
             {!isLogin && (
-              <input
+                <input
                 className="w-full p-3 border rounded-lg mb-4 outline-none focus:ring-2 focus:ring-blue-500"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Nome Completo"
                 required
-              />
+                />
             )}
-  
+
             <input
-              className="w-full p-3 border rounded-lg mb-4 outline-none focus:ring-2 focus:ring-blue-500"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="Username"
-              required
+                className="w-full p-3 border rounded-lg mb-4 outline-none focus:ring-2 focus:ring-blue-500"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Username"
+                required
             />
-  
+
             {!isLogin && (
-              <input
+                <input
                 className="w-full p-3 border rounded-lg mb-4 outline-none focus:ring-2 focus:ring-blue-500"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email"
                 required
-              />
+                />
             )}
-  
+
             <input
-              className="w-full p-3 border rounded-lg mb-4 outline-none focus:ring-2 focus:ring-blue-500"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Senha"
-              required
-            />
-  
-            {!isLogin && (
-              <select
                 className="w-full p-3 border rounded-lg mb-4 outline-none focus:ring-2 focus:ring-blue-500"
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Senha"
                 required
-              >
-                <option value="student">Aluno</option>
-                <option value="professor">Professor</option>
-                <option value="admin">Administrador</option>
-              </select>
-            )}
-  
+            />
+
             {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
-  
+
             <button
-            type="submit"
-            className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 flex justify-center items-center"
-            disabled={loading}
+                type="submit"
+                className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 flex justify-center items-center"
+                disabled={loading}
             >
-            {loading ? <LoadingIndicator className ="size-5" /> : isLogin ? "Entrar" : "Cadastrar"}
+                {loading ? <LoadingIndicator className="size-5" /> : isLogin ? "Entrar" : "Cadastrar"}
             </button>
-          </form>
+            </form>
         </div>
-      </div>
+
+        {/* Footer fixado na parte inferior - Apenas na página de login */}
+        {isLogin && (
+            <footer className="mt-auto w-full py-4 text-center text-gray-600 text-sm absolute bottom-0">
+            <p> adm123 (Username e senha) para adm | student123 para student | professor123 para professor |</p>
+            </footer>
+        )}
+        </div>
+
+        </div>
+      
     );
   }
   
