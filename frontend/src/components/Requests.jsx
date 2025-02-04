@@ -80,6 +80,7 @@ function Requests() {
           Authorization: `Bearer ${token}`,
         },
       });
+      console.log("handleStatusChange chamado com:", id, newStatus, request);
 
       console.log("Comentário atualizado com sucesso!");
       setRequests((prev) =>
@@ -92,32 +93,32 @@ function Requests() {
 
   const handleStatusChange = async (id, newStatus, request) => {
     try {
-        const payload = {
-            id: id,
-            absence: request.absence || null,
-            justification_file: request.justification_file || null,
-            status: newStatus, // Aqui deve ser newStatus, pois é o que o usuário alterou
-            comments: request.comments || "", // Mantendo os comentários atuais
-        };
-
-        await api.put(`/api/forgiveness-requests/${id}/update/`, payload, {
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-            },
-        });
-
-        console.log("Status atualizado com sucesso!");
-
-        setRequests((prev) =>
-            prev.map((req) =>
-                req.id === id ? { ...req, status: newStatus } : req
-            )
-        );
+      // Payload simplificado: apenas o campo "status"
+      const payload = {
+        status: newStatus,
+      };
+  
+      console.log("Payload enviado:", payload);
+  
+      await api.put(`/api/forgiveness-requests/${id}/update/`, payload, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+  
+      console.log("Status atualizado com sucesso!");
+  
+      // Atualize o estado local
+      setRequests((prev) =>
+        prev.map((req) =>
+          req.id === id ? { ...req, status: newStatus } : req
+        )
+      );
     } catch (error) {
-        console.error("Erro ao atualizar o status:", error);
+      console.error("Erro ao atualizar o status:", error);
     }
-};
+  };
 
   
   

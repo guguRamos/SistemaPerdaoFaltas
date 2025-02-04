@@ -43,8 +43,12 @@ class AbsencesSerializer(serializers.ModelSerializer):
 
 
 class ForgivenessRequestsSerializer(serializers.ModelSerializer):
-    absence_details = AbsencesSerializer(source="absence", read_only=True)
+    absence = serializers.PrimaryKeyRelatedField(
+        queryset=Absence.objects.all(), 
+        required=False  # Campo não obrigatório em atualizações
+    )
     justification_file = serializers.FileField(required=False)
+    absence_details = AbsencesSerializer(source="absence", read_only=True)
 
     class Meta:
         model = ForgivenessRequest
@@ -61,7 +65,7 @@ class ForgivenessRequestsSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             "created_at": {"read_only": True},
             "updated_at": {"read_only": True},
-            "status": {"read_only": False},  
+            "status": {"read_only": False},
         }
         
     def create(self, validated_data):

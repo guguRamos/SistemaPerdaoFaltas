@@ -152,5 +152,5 @@ class ForgivenessRequestUpdateView(generics.UpdateAPIView):
 
 
     def perform_update(self, serializer):
-        serializer.save(status=self.request.data.get("status"))
+        serializer.save(status=self.request.data.get("status"), partial=True)
 

@@ -94,8 +94,8 @@ const handleFileUpload = async (absenceId, file) => {
   }
 
   const formData = new FormData();
-  formData.append("absence", absenceId); // ID da ausência associada
-  formData.append("justification_file", file); // Arquivo da justificativa
+  formData.append("absence", absenceId);
+  formData.append("justification_file", file);
 
   try {
     const response = await api.post("/api/forgiveness-requests/create/", formData, {
@@ -105,9 +105,28 @@ const handleFileUpload = async (absenceId, file) => {
       },
     });
 
+    // Atualiza o estado local imediatamente
+    setAbsences(prevAbsences => 
+      prevAbsences.map(absence => 
+        absence.id === absenceId 
+          ? { ...absence, has_forgiveness_request: true } 
+          : absence
+      )
+    );
+
     console.log("Justificativa enviada com sucesso!", response.data);
+
   } catch (error) {
     console.error("Erro ao enviar justificativa:", error);
+    
+    // Reverte a mudança em caso de erro
+    setAbsences(prevAbsences => 
+      prevAbsences.map(absence => 
+        absence.id === absenceId 
+          ? { ...absence, has_forgiveness_request: false } 
+          : absence
+      )
+    );
   }
 };
 
@@ -277,10 +296,11 @@ const handleFileUpload = async (absenceId, file) => {
                         <label className="cursor-pointer bg-black text-white px-3 py-2 rounded hover:bg-gray-800 disabled:opacity-50">
                             Solicitar Perdão
                             <input
-                            type="file"
-                            className="hidden"
-                            onChange={(e) => handleFileUpload(absence.id, e)}
-                            disabled={absence.has_forgiveness_request} 
+                              type="file"
+                              className="hidden"
+                              onChange={(e) => handleFileUpload(absence.id, e.target.files[0])}
+                              disabled={absence.has_forgiveness_request}
+                              key={absence.id + (absence.has_forgiveness_request ? '-sent' : '-pending')} 
                             />
                         </label>
                         )}
