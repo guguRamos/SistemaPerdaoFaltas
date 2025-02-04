@@ -44,7 +44,7 @@ class UserListView(generics.ListAPIView):
 class StudentListView(generics.ListAPIView):
     queryset = User.objects.filter(role='student')  # Filtra apenas estudantes
     serializer_class = UserSerializer
-    permission_classes = [permissions.IsAuthenticated, IsAdmin]
+    permission_classes = [permissions.IsAuthenticated, IsAdmin | IsProfessor]
 
 #View de Faltas
 
@@ -56,11 +56,17 @@ class AbsenceListView(generics.ListAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        if user.role in ["professor", "admin"]:
-            return Absence.objects.all()  # Professores veem todas as faltas
-        elif user.role == "student":
-            return Absence.objects.filter(student=user)  # Alunos veem suas faltas
-        return Absence.objects.none()
+        date = self.request.query_params.get('date', None)
+        
+        queryset = Absence.objects.all()
+        
+        if date:
+            queryset = queryset.filter(date=date)
+        
+        if user.role == "student":
+            queryset = queryset.filter(student=user)
+            
+        return queryset
 
 #Criar as faltas
 class AbsenceCreateView(generics.CreateAPIView):
@@ -125,12 +131,16 @@ class ForgivenessRequestListView(generics.ListAPIView):
 
     def get_queryset(self):
         user = self.request.user
+        
         if user.role == "professor":
-            return ForgivenessRequest.objects.filter(status="PENDING")  # Professores veem apenas pendentes
+            return ForgivenessRequest.objects.filter(status="PENDING")  # Mantém somente filtro por status
+            
         elif user.role == "admin":
-            return ForgivenessRequest.objects.all()  # Admins veem tudo
+            return ForgivenessRequest.objects.all()
+            
         elif user.role == "student":
-            return ForgivenessRequest.objects.filter(absence__student=user)  # Estudantes veem suas próprias solicitações
+            return ForgivenessRequest.objects.filter(absence__student=user)
+            
         return ForgivenessRequest.objects.none()
 
 #Atualizar os status da solicitação

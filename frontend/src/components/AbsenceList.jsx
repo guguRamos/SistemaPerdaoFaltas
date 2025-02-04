@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
-import { Disclosure, DisclosureButton, DisclosurePanel } from "@headlessui/react";
-import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 import api from "../api";
 import { getAuthToken, getUserRole } from "../utils/authHelpers";
+import Header from "./Header";
 
 function classNames(...classes) {
   return classes.filter(Boolean).join(" ");
@@ -16,6 +15,9 @@ function AbsenceList() {
   const userRole = getUserRole();
   const [searchTerm, setSearchTerm] = useState("");
 
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [showAll, setShowAll] = useState(false);
+  
   useEffect(() => {
     const fetchAbsences = async () => {
         setLoading(true);
@@ -24,14 +26,11 @@ function AbsenceList() {
         let token = getAuthToken(); // Token inicial
 
         try {
-            const [absencesResponse, forgivenessResponse] = await Promise.all([
-                api.get("/api/absences/", {
-                    headers: { Authorization: `Bearer ${token}` },
-                }),
-                api.get("/api/forgiveness-requests/", {
-                    headers: { Authorization: `Bearer ${token}` },
-                }),
-            ]);
+          const params = showAll ? {} : { date: selectedDate };
+          const [absencesResponse, forgivenessResponse] = await Promise.all([
+            api.get("/api/absences/", { params, headers: { Authorization: `Bearer ${token}` } }),
+            api.get("/api/forgiveness-requests/", { headers: { Authorization: `Bearer ${token}` } }),
+          ]);
         
             const forgivenessRequestsMap = {};
             forgivenessResponse.data.forEach(request => {
@@ -43,6 +42,9 @@ function AbsenceList() {
                 has_justification: absence.has_justification || false,
                 has_forgiveness_request: forgivenessRequestsMap[absence.id] || false,
             }));
+
+            console.log("Absences recebidas:", updatedAbsences);
+
 
             setAbsences(updatedAbsences);
         } catch (err) {
@@ -81,32 +83,34 @@ function AbsenceList() {
         setError("Usuário não autenticado. Faça login novamente.");
         setLoading(false);
     }
-}, []);
+}, [selectedDate, showAll]);
 
   
 
-  const handleFileUpload = async (absenceId, event) => {
-    const file = event.target.files[0];
-    if (!file) return;
+const handleFileUpload = async (absenceId, file) => {
+  if (!file) {
+    console.error("Nenhum arquivo selecionado.");
+    return;
+  }
 
-    const formData = new FormData();
-    formData.append("absence", absenceId);
-    formData.append("justification_file", file);
+  const formData = new FormData();
+  formData.append("absence", absenceId); // ID da ausência associada
+  formData.append("justification_file", file); // Arquivo da justificativa
 
-    try {
-      const response = await api.post("/api/forgiveness-requests/create/", formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
-        },
-      });
+  try {
+    const response = await api.post("/api/forgiveness-requests/create/", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+        Authorization: `Bearer ${getAuthToken()}`,
+      },
+    });
 
-      alert("Justificativa enviada com sucesso!");
-    } catch (err) {
-      alert("Erro ao enviar justificativa.");
-      console.error(err);
-    }
-  };
+    console.log("Justificativa enviada com sucesso!", response.data);
+  } catch (error) {
+    console.error("Erro ao enviar justificativa:", error);
+  }
+};
+
 
   const handleAbsenceChange = async (absence, updatedFields) => {
     try {
@@ -178,64 +182,39 @@ function AbsenceList() {
 
   return (
     <div className="min-h-full">
-      {/* Navegação */}
-      <Disclosure as="nav" className="bg-gray-800">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 items-center justify-between">
-            <div className="flex items-center">
-              <div className="shrink-0">
-                <img
-                  alt="Logo"
-                  src="https://tailwindui.com/plus/img/logos/mark.svg?color=indigo&shade=500"
-                  className="size-8"
-                />
-              </div>
-              <div className="hidden md:block">
-                <div className="ml-10 flex items-baseline space-x-4">
-                  {navigation.map((item) => (
-                    <a
-                      key={item.name}
-                      href={item.href}
-                      aria-current={item.current ? "page" : undefined}
-                      className={classNames(
-                        item.current ? "bg-gray-900 text-white" : "text-gray-300 hover:bg-gray-700 hover:text-white",
-                        "rounded-md px-3 py-2 text-sm font-medium"
-                      )}
-                    >
-                      {item.name}
-                    </a>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <div className="-mr-2 flex md:hidden">
-              <DisclosureButton className="group relative inline-flex items-center justify-center rounded-md bg-gray-800 p-2 text-gray-400 hover:bg-gray-700 hover:text-white focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800 focus:outline-hidden">
-                <span className="absolute -inset-0.5" />
-                <span className="sr-only">Open main menu</span>
-                <Bars3Icon aria-hidden="true" className="block size-6 group-data-open:hidden" />
-                <XMarkIcon aria-hidden="true" className="hidden size-6 group-data-open:block" />
-              </DisclosureButton>
-            </div>
-          </div>
-        </div>
-      </Disclosure>
+      <Header navigation={navigation} />
 
       {/* Conteúdo Principal */}
       <div className="p-6">
         <h1 className="text-3xl font-bold text-center mb-6">Controle de Faltas</h1>
 
         {/* 🔍 Input de busca */}
-        {userRole !== "student" && (
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex flex-col md:flex-row gap-6 mb-6">
             <input
               type="text"
-              placeholder="Pesquise o nome do aluno..."
-              className="w-1/3 px-4 py-2 border rounded-lg shadow focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Pesquisar aluno..."
+              className="px-4 py-2 border rounded-lg shadow focus:ring-2 focus:ring-blue-500 flex-1"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
+
+            <div className="flex gap-4">
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="px-4 py-2 border rounded-lg shadow"
+                disabled={showAll}
+              />
+              <button
+                onClick={() => setShowAll(!showAll)}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+              >
+                {showAll ? "Filtrar por data" : "Ver todas"}
+              </button>
+            </div>
           </div>
-        )}
+        
 
         <table className="w-full border-collapse border border-gray-300 text-center">
           <thead>

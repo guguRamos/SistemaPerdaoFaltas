@@ -174,19 +174,6 @@ function Form({ route, method }) {
                 required
             />
 
-            {!isLogin && (
-              <select
-                className="w-full p-3 border rounded-lg mb-4 outline-none focus:ring-2 focus:ring-blue-500"
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                required
-              >
-                <option value="student">Aluno</option>
-                <option value="professor">Professor</option>
-                <option value="admin">Administrador</option>
-              </select>
-            )}
-
             {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
 
             <button

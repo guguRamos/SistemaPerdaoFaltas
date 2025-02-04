@@ -1,5 +1,11 @@
-function RequestsProfessor(){
-    return <div>RequestsProfessor</div>
+import Requests from "../components/Requests";
+
+function RequestsProfessor() {
+  return (
+    <div>
+      <Requests/>
+    </div>
+  );
 }
 
-export default RequestsProfessor
+export default RequestsProfessor;
